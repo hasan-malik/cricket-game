@@ -1,0 +1,208 @@
+* { box-sizing: border-box; }
+
+:root {
+  --panel: rgba(9, 17, 29, 0.8);
+  --panel-border: rgba(255,255,255,0.08);
+  --text: #f7fafc;
+  --muted: #bdd0e0;
+  --accent: #97f4b8;
+  --accent-2: #7cc0ff;
+}
+
+html, body {
+  margin: 0;
+  min-height: 100%;
+  background:
+    radial-gradient(circle at top, #163b5d, transparent 35%),
+    linear-gradient(180deg, #0b1d2d, #061019 82%);
+  color: var(--text);
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+body {
+  padding: 16px;
+  display: flex;
+  justify-content: center;
+}
+
+.app-shell {
+  width: min(1500px, 100%);
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.topbar {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+  flex-wrap: wrap;
+}
+
+.brand, .scoreboard {
+  background: var(--panel);
+  border: 1px solid var(--panel-border);
+  border-radius: 20px;
+  backdrop-filter: blur(10px);
+}
+
+.brand {
+  min-width: 300px;
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  flex: 0.95;
+}
+
+.brand-mark {
+  width: 44px;
+  height: 44px;
+  border-radius: 14px;
+  background: linear-gradient(135deg, var(--accent), #fff4a3);
+  position: relative;
+}
+.brand-mark::after {
+  content: "";
+  position: absolute;
+  inset: 11px 13px;
+  border-radius: 999px;
+  background: #0c1c2a;
+}
+
+.brand h1 { margin: 0 0 4px; font-size: 1.5rem; }
+.brand p { margin: 0; color: var(--muted); }
+
+.scoreboard {
+  flex: 1.5;
+  padding: 10px;
+  display: grid;
+  grid-template-columns: 1.2fr repeat(3, 1fr) 1.5fr;
+  gap: 10px;
+}
+
+.score-card {
+  min-height: 78px;
+  border-radius: 16px;
+  padding: 12px 14px;
+  background: rgba(255,255,255,0.04);
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+.score-card.big { background: rgba(151, 244, 184, 0.08); }
+
+.label {
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  font-size: .74rem;
+  margin-bottom: 5px;
+}
+.value {
+  font-weight: 800;
+  font-size: 1.65rem;
+}
+.smallValue {
+  font-size: 1rem;
+  line-height: 1.2;
+}
+
+.game-wrap {
+  position: relative;
+  overflow: hidden;
+  border-radius: 24px;
+  border: 1px solid var(--panel-border);
+  background: #0d2131;
+  box-shadow: 0 36px 90px rgba(0, 0, 0, 0.35);
+}
+
+canvas {
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1400 / 820;
+}
+
+.overlay {
+  position: absolute;
+  inset: 0;
+  display: none;
+  place-items: center;
+  padding: 20px;
+  background: rgba(5, 11, 18, 0.5);
+  backdrop-filter: blur(6px);
+}
+.overlay.show { display: grid; }
+
+.panel {
+  width: min(620px, 95vw);
+  background: rgba(7, 14, 23, 0.92);
+  border: 1px solid rgba(255,255,255,0.09);
+  border-radius: 22px;
+  padding: 24px 26px;
+}
+.panel p { color: var(--muted); line-height: 1.55; }
+.mini-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+  margin: 18px 0;
+}
+.mini-grid > div {
+  background: rgba(255,255,255,0.04);
+  border-radius: 14px;
+  padding: 12px;
+}
+.mini-grid span { display: block; color: var(--muted); margin-top: 4px; }
+
+button {
+  appearance: none;
+  border: 0;
+  border-radius: 16px;
+  cursor: pointer;
+  font-weight: 800;
+}
+#startBtn {
+  padding: 14px 18px;
+  font-size: 1rem;
+  color: #061019;
+  background: linear-gradient(135deg, var(--accent), #fff19d);
+}
+
+.touch-controls {
+  position: absolute;
+  inset: auto 18px 16px 18px;
+  display: flex;
+  justify-content: space-between;
+  gap: 18px;
+  pointer-events: none;
+}
+.touch-btn {
+  pointer-events: auto;
+  min-width: 170px;
+  min-height: 66px;
+  padding: 14px 18px;
+  color: white;
+  background: rgba(8, 18, 29, 0.5);
+  border: 1px solid rgba(255,255,255,0.14);
+  backdrop-filter: blur(4px);
+}
+.touch-btn.left.active {
+  background: rgba(151, 244, 184, 0.24);
+  border-color: rgba(151, 244, 184, 0.9);
+}
+.touch-btn.right.active {
+  background: rgba(124, 192, 255, 0.24);
+  border-color: rgba(124, 192, 255, 0.9);
+}
+
+@media (max-width: 980px) {
+  .scoreboard { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 720px) {
+  body { padding: 10px; }
+  .touch-controls { inset: auto 10px 10px 10px; }
+  .touch-btn { min-width: 0; flex: 1; }
+  .mini-grid { grid-template-columns: 1fr; }
+}

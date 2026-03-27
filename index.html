@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Arcade Cricket v4</title>
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark"></div>
+        <div>
+          <h1>Arcade Cricket</h1>
+          <p>Time-based batting system with early/perfect/late timing meter</p>
+        </div>
+      </div>
+
+      <div class="scoreboard">
+        <div class="score-card big">
+          <span class="label">Score</span>
+          <span id="scoreValue" class="value">0</span>
+        </div>
+        <div class="score-card">
+          <span class="label">Balls</span>
+          <span id="ballsValue" class="value smallValue">0 / 30</span>
+        </div>
+        <div class="score-card">
+          <span class="label">Wickets</span>
+          <span id="wicketsValue" class="value smallValue">0 / 3</span>
+        </div>
+        <div class="score-card">
+          <span class="label">Delivery</span>
+          <span id="ballTypeValue" class="value smallValue">-</span>
+        </div>
+        <div class="score-card wide">
+          <span class="label">Last Ball</span>
+          <span id="lastBallValue" class="value smallValue">Waiting…</span>
+        </div>
+      </div>
+    </header>
+
+    <main class="game-wrap">
+      <canvas id="gameCanvas" width="1400" height="820"></canvas>
+
+      <div id="overlay" class="overlay show">
+        <div class="panel">
+          <h2>Arcade Cricket v4</h2>
+          <p>
+            This version uses a real release timer for each ball. Every delivery type has its own ideal hit time in seconds.
+            Wrong side selection now gives an immediate bad result. The timing bar is centered on perfect timing:
+            <strong>top = very early</strong>, <strong>middle = perfect</strong>, <strong>bottom = very late</strong>.
+          </p>
+          <div class="mini-grid">
+            <div><strong>Left arrow / LEG</strong><span>leg side shot</span></div>
+            <div><strong>Right arrow / OFF</strong><span>off side shot</span></div>
+            <div><strong>Timing bar</strong><span>100 at the center</span></div>
+            <div><strong>Wrong side</strong><span>immediate bad result</span></div>
+          </div>
+          <button id="startBtn">Start innings</button>
+        </div>
+      </div>
+
+      <div class="touch-controls">
+        <button id="legBtn" class="touch-btn left">LEG SIDE</button>
+        <button id="offBtn" class="touch-btn right">OFF SIDE</button>
+      </div>
+    </main>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
