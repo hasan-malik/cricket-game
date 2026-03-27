@@ -32,6 +32,7 @@ const GAME = {
   fieldMarkers: [],
   shotTimingScore: null,
   shotTimingOffsetNorm: 0,   // -1 early, 0 perfect, +1 late
+  practiceMode: false,
 };
 
 const pitch = {
@@ -298,21 +299,19 @@ function judgeShot(side) {
     } else if (wouldHitStumps(ball)) {
       resolveWicket("Wrong side · bowled", ball.x, ball.y);
     } else {
-      resolveRuns(0, "Wrong side · dot ball");
-      ball = null;
-      spawnCooldown = 0.95;
+      ball.pendingResult = "dot";
+      ball.pendingText = "Wrong side";
     }
     return;
   }
 
   if (timing.absDelta > ball.type.scoringWindow) {
-    if (wouldHitStumps(ball) && timing.absDelta > ball.type.wicketWindow) {
-      resolveWicket("Missed the line", ball.x, ball.y);
-    } else {
-      resolveRuns(0, "Too early/late · dot ball");
-      ball = null;
-      spawnCooldown = 0.95;
-    }
+    // Too early or too late — let the ball continue to crease, result resolves at end of travel
+    // (the auto-judge at end of fullTravelTime will fire, but ball.judged=true so we pre-set outcome)
+    ball.pendingResult = wouldHitStumps(ball) && timing.absDelta > ball.type.wicketWindow
+      ? "wicket"
+      : "dot";
+    ball.pendingText = timing.delta < 0 ? "Too early" : "Too late";
     return;
   }
 
@@ -330,9 +329,8 @@ function judgeShot(side) {
     resolveRuns(1, "Mistimed single");
     launchHit(side, s / 100, 1, true);
   } else {
-    resolveRuns(0, "Poor timing · dot ball");
-    ball = null;
-    spawnCooldown = 0.95;
+    ball.pendingResult = "dot";
+    ball.pendingText = "Poor timing";
   }
 }
 
@@ -381,13 +379,15 @@ function launchHit(side, quality, runs, grounded) {
   if (!ball) return;
   ball.hit = true;
   const sideDir = side === "leg" ? -1 : 1;
-  const lift = runs === 6 ? rand(1.0, 1.22) : runs === 4 ? rand(0.65, 0.86) : rand(0.20, 0.45);
-  const power = lerp(720, 1130, quality) * (runs === 6 ? 1.06 : runs === 4 ? 0.92 : 0.72);
+  const lift = runs === 6 ? rand(1.05, 1.28) : runs === 4 ? rand(0.72, 0.92) : rand(0.20, 0.45);
+  const power = lerp(900, 1600, quality) * (runs === 6 ? 1.22 : runs === 4 ? 1.05 : 0.72);
   ball.vx = Math.cos(lift) * power * sideDir;
-  ball.vy = -Math.sin(lift) * power * (grounded ? 0.58 : 0.84);
-  ball.life = runs === 6 ? 2.7 : runs === 4 ? 2.35 : 1.25;
+  ball.vy = -Math.sin(lift) * power * (grounded ? 0.58 : 0.92);
+  ball.gravity = runs === 6 ? 480 : runs === 4 ? 680 : 1260;
+  ball.drag   = runs === 6 ? 0.68 : runs === 4 ? 0.72 : 0.52;
+  ball.life   = runs === 6 ? 4.2 : runs === 4 ? 3.2 : 1.25;
   if (runs >= 4) {
-    addConfetti(ball.x, ball.y - 10, runs === 6 ? 20 : 12);
+    addConfetti(ball.x, ball.y - 10, runs === 6 ? 28 : 16);
     addFieldMarker(side, power, runs);
   }
 }
@@ -419,9 +419,11 @@ function updateBall(dt) {
 
   if (ball.hit) {
     ball.life -= dt;
-    ball.vy += 1260 * dt;
-    ball.x += ball.vx * dt * 0.52;
-    ball.y += ball.vy * dt * 0.52;
+    const grav = ball.gravity ?? 1260;
+    const drag = ball.drag ?? 0.52;
+    ball.vy += grav * dt;
+    ball.x += ball.vx * dt * drag;
+    ball.y += ball.vy * dt * drag;
     ball.seamRot += 16 * dt;
     addTrail(ball.x, ball.y, 7);
     if (ball.life <= 0 || ball.x < -200 || ball.x > W + 200 || ball.y > H + 120) {
@@ -463,13 +465,33 @@ function updateBall(dt) {
     postMessage("BOUNCE", "#ffffff", 0.38);
   }
 
-  if (!ball.judged && ball.elapsed > fullTravelTime + 0.02) {
-    GAME.shotTimingScore = 0;
-    GAME.shotTimingOffsetNorm = 1;
-    if (wouldHitStumps(ball)) {
-      resolveWicket("Left it on the stumps", ball.x, ball.y);
+  if (ball.elapsed > fullTravelTime + 0.02) {
+    if (ball.judged && ball.pendingResult) {
+      if (GAME.state !== "playing") {
+        // Game ended while ball was mid-air — just clean up
+        ball = null;
+        return;
+      }
+      if (ball.pendingResult === "wicket") {
+        resolveWicket(ball.pendingText + " · bowled", ball.x, ball.y);
+      } else {
+        resolveRuns(0, ball.pendingText + " · dot ball");
+        ball = null;
+        spawnCooldown = 0.92;
+      }
+    } else if (!ball.judged) {
+      // Player never swung — left it
+      GAME.shotTimingScore = 0;
+      GAME.shotTimingOffsetNorm = 1;
+      if (wouldHitStumps(ball)) {
+        resolveWicket("Left it on the stumps", ball.x, ball.y);
+      } else {
+        resolveRuns(0, "Too late · dot ball");
+        ball = null;
+        spawnCooldown = 0.92;
+      }
     } else {
-      resolveRuns(0, "Too late · dot ball");
+      // judged but no pendingResult and not hit — shouldn't happen, clean up
       ball = null;
       spawnCooldown = 0.92;
     }
@@ -800,6 +822,23 @@ function drawTimingMeterRight() {
   ctx.fillText("TIMING", boxX + (trackW + 32) / 2, boxY + 20);
   ctx.fillText("METER", boxX + (trackW + 32) / 2, boxY + 34);
 
+  // Practice mode toggle button (drawn in canvas, clickable via listener)
+  const pmBtnX = boxX + 8;
+  const pmBtnY = trackY + trackH + 56;
+  const pmBtnW = trackW + 16;
+  const pmBtnH = 22;
+  ctx.fillStyle = GAME.practiceMode ? "rgba(151,244,184,0.28)" : "rgba(255,255,255,0.07)";
+  roundRect(ctx, pmBtnX, pmBtnY, pmBtnW, pmBtnH, 8);
+  ctx.fill();
+  ctx.strokeStyle = GAME.practiceMode ? "rgba(151,244,184,0.8)" : "rgba(255,255,255,0.18)";
+  ctx.lineWidth = 1.5;
+  ctx.stroke();
+  ctx.font = "700 9px Inter, sans-serif";
+  ctx.fillStyle = GAME.practiceMode ? "#97f4b8" : "rgba(247,250,252,0.55)";
+  ctx.fillText(GAME.practiceMode ? "PRACTICE ON" : "PRACTICE OFF", boxX + (trackW + 32) / 2, pmBtnY + 14);
+  // store for hit-testing
+  drawTimingMeterRight._btn = { x: pmBtnX, y: pmBtnY, w: pmBtnW, h: pmBtnH };
+
   // Band definitions: label, color, height fraction, offsetNorm range
   const bands = [
     { label: "EARLY",        color: "rgba(255,100,100,0.55)",   frac: 0.18 },
@@ -851,7 +890,7 @@ function drawTimingMeterRight() {
     else if (markerNorm <= 0.14) { markerLabel = "PERFECT"; markerColor = "#ffe58a"; }
     else if (markerNorm <= 0.54) { markerLabel = "SLIGHT LATE"; markerColor = "#ffb450"; }
     else { markerLabel = "LATE"; markerColor = "#ff6464"; }
-  } else if (ball && !ball.hit) {
+  } else if (ball && !ball.hit && GAME.practiceMode) {
     const timing = computeTiming(ball.elapsed, ball.type);
     markerNorm = timing.offsetNorm;
     markerColor = "rgba(124,192,255,0.95)";
@@ -889,6 +928,15 @@ function drawTimingMeterRight() {
   ctx.restore();
 }
 
+function drawVersionTag() {
+  ctx.save();
+  ctx.textAlign = "center";
+  ctx.font = "700 13px Inter, sans-serif";
+  ctx.fillStyle = "rgba(247,250,252,0.45)";
+  ctx.fillText("v8", W / 2, H - 22);
+  ctx.restore();
+}
+
 function roundRect(ctx, x, y, w, h, r) {
   ctx.beginPath();
   ctx.moveTo(x + r, y);
@@ -916,6 +964,7 @@ function drawScene() {
   drawCenterText();
   drawKeyHUD();
   drawTimingMeterRight();
+  drawVersionTag();
 }
 
 function loop(now) {
@@ -930,6 +979,19 @@ function loop(now) {
 window.addEventListener("keydown", (e) => {
   if (e.key === "ArrowLeft") { e.preventDefault(); registerShot("leg"); }
   else if (e.key === "ArrowRight") { e.preventDefault(); registerShot("off"); }
+  else if (e.key === "p" || e.key === "P") { GAME.practiceMode = !GAME.practiceMode; }
+});
+
+canvas.addEventListener("pointerdown", (e) => {
+  const rect = canvas.getBoundingClientRect();
+  const scaleX = canvas.width / rect.width;
+  const scaleY = canvas.height / rect.height;
+  const cx = (e.clientX - rect.left) * scaleX;
+  const cy = (e.clientY - rect.top) * scaleY;
+  const btn = drawTimingMeterRight._btn;
+  if (btn && cx >= btn.x && cx <= btn.x + btn.w && cy >= btn.y && cy <= btn.y + btn.h) {
+    GAME.practiceMode = !GAME.practiceMode;
+  }
 });
 
 function bindPress(el, side) {
