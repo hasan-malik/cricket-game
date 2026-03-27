@@ -841,11 +841,11 @@ function drawTimingMeterRight() {
 
   // Band definitions: label, color, height fraction, offsetNorm range
   const bands = [
-    { label: "EARLY",        color: "rgba(255,100,100,0.55)",   frac: 0.18 },
-    { label: "SLIGHT EARLY", color: "rgba(255,180,80,0.45)",    frac: 0.18 },
-    { label: "PERFECT",      color: "rgba(255,229,138,0.75)",   frac: 0.28 },
-    { label: "SLIGHT LATE",  color: "rgba(255,180,80,0.45)",    frac: 0.18 },
-    { label: "LATE",         color: "rgba(255,100,100,0.55)",   frac: 0.18 },
+    { label: "EARLY",        color: "rgba(255,100,100,0.55)",   frac: 0.35 },
+    { label: "SLIGHT EARLY", color: "rgba(255,180,80,0.45)",    frac: 0.20 },
+    { label: "PERFECT",      color: "rgba(255,229,138,0.75)",   frac: 0.10 },
+    { label: "SLIGHT LATE",  color: "rgba(255,180,80,0.45)",    frac: 0.20 },
+    { label: "LATE",         color: "rgba(255,100,100,0.55)",   frac: 0.35 },
   ];
 
   // Draw bands
@@ -885,10 +885,10 @@ function drawTimingMeterRight() {
     markerNorm = GAME.shotTimingOffsetNorm;
     scoreDisplay = String(GAME.shotTimingScore);
     // pick label based on norm
-    if (markerNorm < -0.54) { markerLabel = "EARLY"; markerColor = "#ff6464"; }
-    else if (markerNorm < -0.14) { markerLabel = "SLIGHT EARLY"; markerColor = "#ffb450"; }
-    else if (markerNorm <= 0.14) { markerLabel = "PERFECT"; markerColor = "#ffe58a"; }
-    else if (markerNorm <= 0.54) { markerLabel = "SLIGHT LATE"; markerColor = "#ffb450"; }
+    if (markerNorm < -0.65) { markerLabel = "EARLY"; markerColor = "#ff6464"; }
+    else if (markerNorm < -0.25) { markerLabel = "SLIGHT EARLY"; markerColor = "#ffb450"; }
+    else if (markerNorm <= 0.25) { markerLabel = "PERFECT"; markerColor = "#ffe58a"; }
+    else if (markerNorm <= 0.65) { markerLabel = "SLIGHT LATE"; markerColor = "#ffb450"; }
     else { markerLabel = "LATE"; markerColor = "#ff6464"; }
   } else if (ball && !ball.hit && GAME.practiceMode) {
     const timing = computeTiming(ball.elapsed, ball.type);
@@ -933,7 +933,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v8", W / 2, H - 22);
+  ctx.fillText("v9", W / 2, H - 22);
   ctx.restore();
 }
 
