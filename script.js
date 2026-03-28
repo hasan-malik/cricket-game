@@ -2,6 +2,7 @@ const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
 const scoreValue = document.getElementById("scoreValue");
+const oversValue = document.getElementById("oversValue");
 const ballsValue = document.getElementById("ballsValue");
 const lastBallValue = document.getElementById("lastBallValue");
 const overlay = document.getElementById("overlay");
@@ -23,6 +24,7 @@ const GAME = {
   wickets: 0,
   lastBallText: "Waiting…",
   currentOverBalls: [],
+  target: 100,
   message: "",
   messageColor: "#ffffff",
   messageTimer: 0,
@@ -139,14 +141,16 @@ function project(progress, lateral = 0) {
 }
 
 function updateHud() {
-  scoreValue.textContent = `${GAME.score}/${GAME.wickets}`;
   const toOvers = b => `${Math.floor(b / 6)}.${b % 6}`;
-  ballsValue.textContent = `${toOvers(GAME.balls)} / ${toOvers(GAME.maxBalls)}`;
+  scoreValue.textContent = `${GAME.score}/${GAME.wickets}`;
+  oversValue.textContent = `${toOvers(GAME.balls)} (${toOvers(GAME.maxBalls)})`;
+  ballsValue.textContent = GAME.target;
   const overSlots = Array.from({ length: 6 }, (_, i) => GAME.currentOverBalls[i] ?? "–");
   lastBallValue.textContent = overSlots.join("  ");
 }
 
 function resetGame() {
+  GAME.target = Math.floor(Math.random() * 41) + 80;
   GAME.score = 0;
   GAME.balls = 0;
   GAME.wickets = 0;
@@ -899,7 +903,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v17", W / 2, H - 22);
+  ctx.fillText("v18", W / 2, H - 22);
   ctx.restore();
 }
 

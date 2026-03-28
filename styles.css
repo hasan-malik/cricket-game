@@ -95,6 +95,13 @@ body {
   justify-content: center;
 }
 .score-card.big { background: rgba(151, 244, 184, 0.08); }
+.score-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+.muted { color: var(--muted); }
 
 .label {
   color: var(--muted);
