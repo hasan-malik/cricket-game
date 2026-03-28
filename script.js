@@ -24,7 +24,7 @@ const GAME = {
   wickets: 0,
   lastBallText: "Waiting…",
   currentOverBalls: [],
-  target: 100,
+  target: "",
   message: "",
   messageColor: "#ffffff",
   messageTimer: 0,
@@ -903,7 +903,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v18", W / 2, H - 22);
+  ctx.fillText("v19", W / 2, H - 22);
   ctx.restore();
 }
 
@@ -969,6 +969,8 @@ function togglePause() {
   if (GAME.state !== "playing") return;
   GAME.paused = !GAME.paused;
   pauseBtn.textContent = GAME.paused ? "▶ Resume" : "⏸ Pause";
+  if (GAME.paused) overlay.classList.add("show");
+  else overlay.classList.remove("show");
 }
 
 function togglePractice() {
@@ -976,6 +978,10 @@ function togglePractice() {
   practiceModeBtn.textContent = GAME.practiceMode ? "Practice: ON" : "Practice: OFF";
   practiceModeBtn.classList.toggle("active", GAME.practiceMode);
 }
+
+document.querySelector(".brand").addEventListener("click", () => {
+  if (GAME.state === "playing" && !GAME.paused) togglePause();
+});
 
 pauseBtn.addEventListener("click", togglePause);
 practiceModeBtn.addEventListener("click", togglePractice);
