@@ -139,7 +139,8 @@ function project(progress, lateral = 0) {
 
 function updateHud() {
   scoreValue.textContent = `${GAME.score}/${GAME.wickets}`;
-  ballsValue.textContent = `${GAME.balls} / ${GAME.maxBalls}`;
+  const toOvers = b => `${Math.floor(b / 6)}.${b % 6}`;
+  ballsValue.textContent = `${toOvers(GAME.balls)} / ${toOvers(GAME.maxBalls)}`;
   lastBallValue.textContent = GAME.lastBallText;
 }
 
@@ -891,7 +892,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v15", W / 2, H - 22);
+  ctx.fillText("v16", W / 2, H - 22);
   ctx.restore();
 }
 
