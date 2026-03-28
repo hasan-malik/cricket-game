@@ -3,13 +3,13 @@ const ctx = canvas.getContext("2d");
 
 const scoreValue = document.getElementById("scoreValue");
 const ballsValue = document.getElementById("ballsValue");
-const wicketsValue = document.getElementById("wicketsValue");
-const ballTypeValue = document.getElementById("ballTypeValue");
 const lastBallValue = document.getElementById("lastBallValue");
 const overlay = document.getElementById("overlay");
 const startBtn = document.getElementById("startBtn");
 const legBtn = document.getElementById("legBtn");
 const offBtn = document.getElementById("offBtn");
+const pauseBtn = document.getElementById("pauseBtn");
+const practiceModeBtn = document.getElementById("practiceModeBtn");
 
 const W = canvas.width;
 const H = canvas.height;
@@ -22,7 +22,6 @@ const GAME = {
   balls: 0,
   wickets: 0,
   lastBallText: "Waiting…",
-  deliveryText: "-",
   message: "",
   messageColor: "#ffffff",
   messageTimer: 0,
@@ -33,6 +32,7 @@ const GAME = {
   shotTimingScore: null,
   shotTimingOffsetNorm: 0,   // -1 early, 0 perfect, +1 late
   practiceMode: false,
+  paused: false,
 };
 
 const pitch = {
@@ -69,7 +69,7 @@ const DELIVERY_TYPES = [
   {
     name: "Inswinger",
     preferredSide: "leg",
-    idealTime: 1.03,
+    idealTime: 0.73,
     scoringWindow: 0.48,
     wicketWindow: 0.18,
     speed: 650,
@@ -83,7 +83,7 @@ const DELIVERY_TYPES = [
   {
     name: "Outswinger",
     preferredSide: "off",
-    idealTime: 1.05,
+    idealTime: 0.75,
     scoringWindow: 0.48,
     wicketWindow: 0.18,
     speed: 660,
@@ -97,7 +97,7 @@ const DELIVERY_TYPES = [
   {
     name: "Yorker",
     preferredSide: "leg",
-    idealTime: 0.93,
+    idealTime: 0.63,
     scoringWindow: 0.35,
     wicketWindow: 0.16,
     speed: 770,
@@ -111,7 +111,7 @@ const DELIVERY_TYPES = [
   {
     name: "Bouncer",
     preferredSide: "off",
-    idealTime: 1.14,
+    idealTime: 0.84,
     scoringWindow: 0.48,
     wicketWindow: 0.18,
     speed: 705,
@@ -138,10 +138,8 @@ function project(progress, lateral = 0) {
 }
 
 function updateHud() {
-  scoreValue.textContent = GAME.score;
+  scoreValue.textContent = `${GAME.score}/${GAME.wickets}`;
   ballsValue.textContent = `${GAME.balls} / ${GAME.maxBalls}`;
-  wicketsValue.textContent = `${GAME.wickets} / ${GAME.maxWickets}`;
-  ballTypeValue.textContent = GAME.deliveryText;
   lastBallValue.textContent = GAME.lastBallText;
 }
 
@@ -150,7 +148,6 @@ function resetGame() {
   GAME.balls = 0;
   GAME.wickets = 0;
   GAME.lastBallText = "Waiting…";
-  GAME.deliveryText = "-";
   GAME.message = "";
   GAME.messageTimer = 0;
   GAME.impacts = [];
@@ -165,6 +162,7 @@ function resetGame() {
   wicketAnim.pieces = [];
   ball = null;
   spawnCooldown = 1.0;
+  GAME.paused = false;
   GAME.state = "playing";
   overlay.classList.remove("show");
   updateHud();
@@ -206,7 +204,6 @@ function spawnBall() {
   if (GAME.state !== "playing") return;
   if (GAME.balls >= GAME.maxBalls || GAME.wickets >= GAME.maxWickets) return;
   ball = chooseDelivery();
-  GAME.deliveryText = ball.type.name;
   GAME.shotTimingScore = null;
   GAME.shotTimingOffsetNorm = 0;
   updateHud();
@@ -306,8 +303,6 @@ function judgeShot(side) {
   }
 
   if (timing.absDelta > ball.type.scoringWindow) {
-    // Too early or too late — let the ball continue to crease, result resolves at end of travel
-    // (the auto-judge at end of fullTravelTime will fire, but ball.judged=true so we pre-set outcome)
     ball.pendingResult = wouldHitStumps(ball) && timing.absDelta > ball.type.wicketWindow
       ? "wicket"
       : "dot";
@@ -367,7 +362,7 @@ function maybeFinish() {
       <p><strong>Final score:</strong> ${GAME.score}</p>
       <p><strong>Balls:</strong> ${GAME.balls} / ${GAME.maxBalls} &nbsp; · &nbsp; <strong>Wickets:</strong> ${GAME.wickets} / ${GAME.maxWickets}</p>
       <p>
-        This build uses a real timer per delivery, a centered early/perfect/late timing bar, and wrong-side shots as immediate bad results.
+        This build uses a real timer per delivery, a 5-band timing meter, and a softened wrong-side rule (good timing still earns 1 run).
       </p>
       <button id="restartBtn">Play again</button>
     `;
@@ -394,8 +389,11 @@ function launchHit(side, quality, runs, grounded) {
 
 function registerShot(side) {
   if (GAME.state !== "playing") return;
-  striker.swingSide = side;
-  striker.swingTimer = 0.34;
+  // Delay the visual swing by 0.3s so it stays in sync with ball arrival
+  setTimeout(() => {
+    striker.swingSide = side;
+    striker.swingTimer = 0.34;
+  }, 300);
   if (side === "leg") {
     flashLeg = 0.16;
     legBtn.classList.add("active");
@@ -410,7 +408,6 @@ function registerShot(side) {
 
 function updateBall(dt) {
   if (!ball) {
-    GAME.deliveryText = "-";
     updateHud();
     return;
   }
@@ -468,7 +465,6 @@ function updateBall(dt) {
   if (ball.elapsed > fullTravelTime + 0.02) {
     if (ball.judged && ball.pendingResult) {
       if (GAME.state !== "playing") {
-        // Game ended while ball was mid-air — just clean up
         ball = null;
         return;
       }
@@ -480,7 +476,6 @@ function updateBall(dt) {
         spawnCooldown = 0.92;
       }
     } else if (!ball.judged) {
-      // Player never swung — left it
       GAME.shotTimingScore = 0;
       GAME.shotTimingOffsetNorm = 1;
       if (wouldHitStumps(ball)) {
@@ -491,7 +486,6 @@ function updateBall(dt) {
         spawnCooldown = 0.92;
       }
     } else {
-      // judged but no pendingResult and not hit — shouldn't happen, clean up
       ball = null;
       spawnCooldown = 0.92;
     }
@@ -511,7 +505,7 @@ function updateEffects(dt) {
   }
   for (let i = GAME.trails.length - 1; i >= 0; i--) {
     const t = GAME.trails[i];
-    t.life -= dt; 
+    t.life -= dt;
     if (t.life <= 0) GAME.trails.splice(i, 1);
   }
   for (let i = GAME.fieldMarkers.length - 1; i >= 0; i--) {
@@ -538,7 +532,7 @@ function updateEffects(dt) {
 }
 
 function update(dt) {
-  if (GAME.state === "playing") {
+  if (GAME.state === "playing" && !GAME.paused) {
     if (!ball) {
       spawnCooldown -= dt;
       if (spawnCooldown <= 0) spawnBall();
@@ -812,7 +806,7 @@ function drawTimingMeterRight() {
   // Background panel
   ctx.save();
   ctx.fillStyle = "rgba(6,16,25,0.52)";
-  roundRect(ctx, boxX, boxY, trackW + 32, trackH + 80, 20);
+  roundRect(ctx, boxX, boxY, trackW + 32, trackH + 56, 20);
   ctx.fill();
 
   // Header label
@@ -822,30 +816,13 @@ function drawTimingMeterRight() {
   ctx.fillText("TIMING", boxX + (trackW + 32) / 2, boxY + 20);
   ctx.fillText("METER", boxX + (trackW + 32) / 2, boxY + 34);
 
-  // Practice mode toggle button (drawn in canvas, clickable via listener)
-  const pmBtnX = boxX + 8;
-  const pmBtnY = trackY + trackH + 56;
-  const pmBtnW = trackW + 16;
-  const pmBtnH = 22;
-  ctx.fillStyle = GAME.practiceMode ? "rgba(151,244,184,0.28)" : "rgba(255,255,255,0.07)";
-  roundRect(ctx, pmBtnX, pmBtnY, pmBtnW, pmBtnH, 8);
-  ctx.fill();
-  ctx.strokeStyle = GAME.practiceMode ? "rgba(151,244,184,0.8)" : "rgba(255,255,255,0.18)";
-  ctx.lineWidth = 1.5;
-  ctx.stroke();
-  ctx.font = "700 9px Inter, sans-serif";
-  ctx.fillStyle = GAME.practiceMode ? "#97f4b8" : "rgba(247,250,252,0.55)";
-  ctx.fillText(GAME.practiceMode ? "PRACTICE ON" : "PRACTICE OFF", boxX + (trackW + 32) / 2, pmBtnY + 14);
-  // store for hit-testing
-  drawTimingMeterRight._btn = { x: pmBtnX, y: pmBtnY, w: pmBtnW, h: pmBtnH };
-
-  // Band definitions: label, color, height fraction, offsetNorm range
+  // Band definitions
   const bands = [
-    { label: "EARLY",        color: "rgba(255,100,100,0.55)",   frac: 0.35 },
-    { label: "SLIGHT EARLY", color: "rgba(255,180,80,0.45)",    frac: 0.20 },
-    { label: "PERFECT",      color: "rgba(255,229,138,0.75)",   frac: 0.10 },
-    { label: "SLIGHT LATE",  color: "rgba(255,180,80,0.45)",    frac: 0.20 },
-    { label: "LATE",         color: "rgba(255,100,100,0.55)",   frac: 0.35 },
+    { label: "EARLY",        color: "rgba(255,100,100,0.55)",  frac: 0.35 },
+    { label: "SLIGHT EARLY", color: "rgba(255,180,80,0.45)",   frac: 0.20 },
+    { label: "PERFECT",      color: "rgba(255,229,138,0.75)",  frac: 0.10 },
+    { label: "SLIGHT LATE",  color: "rgba(255,180,80,0.45)",   frac: 0.20 },
+    { label: "LATE",         color: "rgba(255,100,100,0.55)",  frac: 0.35 },
   ];
 
   // Draw bands
@@ -869,9 +846,8 @@ function drawTimingMeterRight() {
     ctx.fillText(r.label, cx, r.y + r.h / 2 + 3.5);
   }
 
-  // Helper: map offsetNorm (-1 early, 0 perfect, +1 late) to a Y within the track
+  // Map offsetNorm (-1 early, 0 perfect, +1 late) → Y within track
   function normToY(norm) {
-    // norm in [-1, 1], track spans trackY to trackY+trackH
     return trackY + ((norm + 1) / 2) * trackH;
   }
 
@@ -879,50 +855,32 @@ function drawTimingMeterRight() {
   let markerNorm = null;
   let markerLabel = null;
   let markerColor = "#ffffff";
-  let scoreDisplay = "--";
 
   if (GAME.shotTimingScore !== null) {
     markerNorm = GAME.shotTimingOffsetNorm;
-    scoreDisplay = String(GAME.shotTimingScore);
-    // pick label based on norm
-    if (markerNorm < -0.65) { markerLabel = "EARLY"; markerColor = "#ff6464"; }
+    if      (markerNorm < -0.65) { markerLabel = "EARLY";        markerColor = "#ff6464"; }
     else if (markerNorm < -0.25) { markerLabel = "SLIGHT EARLY"; markerColor = "#ffb450"; }
-    else if (markerNorm <= 0.25) { markerLabel = "PERFECT"; markerColor = "#ffe58a"; }
-    else if (markerNorm <= 0.65) { markerLabel = "SLIGHT LATE"; markerColor = "#ffb450"; }
-    else { markerLabel = "LATE"; markerColor = "#ff6464"; }
+    else if (markerNorm <=  0.25) { markerLabel = "PERFECT";      markerColor = "#ffe58a"; }
+    else if (markerNorm <=  0.65) { markerLabel = "SLIGHT LATE";  markerColor = "#ffb450"; }
+    else                          { markerLabel = "LATE";         markerColor = "#ff6464"; }
   } else if (ball && !ball.hit && GAME.practiceMode) {
     const timing = computeTiming(ball.elapsed, ball.type);
     markerNorm = timing.offsetNorm;
     markerColor = "rgba(124,192,255,0.95)";
-    scoreDisplay = String(timing.score);
   }
 
-  // Draw marker dot + highlighted band outline
+  // Draw marker dot with glow
   if (markerNorm !== null) {
     const my = normToY(markerNorm);
-    // Glow ring
     ctx.save();
     ctx.shadowColor = markerColor;
     ctx.shadowBlur = 10;
     ctx.fillStyle = markerColor;
     ctx.beginPath(); ctx.arc(cx, my, 9, 0, Math.PI * 2); ctx.fill();
     ctx.restore();
-    // White border dot
     ctx.strokeStyle = "#ffffff";
     ctx.lineWidth = 2;
     ctx.beginPath(); ctx.arc(cx, my, 9, 0, Math.PI * 2); ctx.stroke();
-  }
-
-  // Score + band label at bottom
-  ctx.textAlign = "center";
-  ctx.font = "900 26px Inter, sans-serif";
-  ctx.fillStyle = GAME.shotTimingScore !== null ? markerColor : "#f7fafc";
-  ctx.fillText(scoreDisplay, cx, trackY + trackH + 30);
-
-  if (GAME.shotTimingScore !== null && markerLabel) {
-    ctx.font = "700 9px Inter, sans-serif";
-    ctx.fillStyle = markerColor;
-    ctx.fillText(markerLabel, cx, trackY + trackH + 44);
   }
 
   ctx.restore();
@@ -933,7 +891,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v9", W / 2, H - 22);
+  ctx.fillText("v13", W / 2, H - 22);
   ctx.restore();
 }
 
@@ -979,7 +937,8 @@ function loop(now) {
 window.addEventListener("keydown", (e) => {
   if (e.key === "ArrowLeft") { e.preventDefault(); registerShot("leg"); }
   else if (e.key === "ArrowRight") { e.preventDefault(); registerShot("off"); }
-  else if (e.key === "p" || e.key === "P") { GAME.practiceMode = !GAME.practiceMode; }
+  else if (e.key === "p" || e.key === "P") { togglePractice(); }
+  else if (e.key === "Escape") { togglePause(); }
 });
 
 canvas.addEventListener("pointerdown", (e) => {
@@ -993,6 +952,21 @@ canvas.addEventListener("pointerdown", (e) => {
     GAME.practiceMode = !GAME.practiceMode;
   }
 });
+
+function togglePause() {
+  if (GAME.state !== "playing") return;
+  GAME.paused = !GAME.paused;
+  pauseBtn.textContent = GAME.paused ? "▶ Resume" : "⏸ Pause";
+}
+
+function togglePractice() {
+  GAME.practiceMode = !GAME.practiceMode;
+  practiceModeBtn.textContent = GAME.practiceMode ? "Practice: ON" : "Practice: OFF";
+  practiceModeBtn.classList.toggle("active", GAME.practiceMode);
+}
+
+pauseBtn.addEventListener("click", togglePause);
+practiceModeBtn.addEventListener("click", togglePractice);
 
 function bindPress(el, side) {
   const fire = (e) => { e.preventDefault(); registerShot(side); };
