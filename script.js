@@ -22,6 +22,7 @@ const GAME = {
   balls: 0,
   wickets: 0,
   lastBallText: "Waiting…",
+  currentOverBalls: [],
   message: "",
   messageColor: "#ffffff",
   messageTimer: 0,
@@ -141,7 +142,8 @@ function updateHud() {
   scoreValue.textContent = `${GAME.score}/${GAME.wickets}`;
   const toOvers = b => `${Math.floor(b / 6)}.${b % 6}`;
   ballsValue.textContent = `${toOvers(GAME.balls)} / ${toOvers(GAME.maxBalls)}`;
-  lastBallValue.textContent = GAME.lastBallText;
+  const overSlots = Array.from({ length: 6 }, (_, i) => GAME.currentOverBalls[i] ?? "–");
+  lastBallValue.textContent = overSlots.join("  ");
 }
 
 function resetGame() {
@@ -149,6 +151,7 @@ function resetGame() {
   GAME.balls = 0;
   GAME.wickets = 0;
   GAME.lastBallText = "Waiting…";
+  GAME.currentOverBalls = [];
   GAME.message = "";
   GAME.messageTimer = 0;
   GAME.impacts = [];
@@ -334,6 +337,8 @@ function resolveRuns(runs, text) {
   GAME.score += runs;
   GAME.balls += 1;
   GAME.lastBallText = runs ? `${runs} runs · ${text}` : text;
+  if ((GAME.balls - 1) % 6 === 0) GAME.currentOverBalls = [];
+  GAME.currentOverBalls.push(runs === 0 ? "·" : String(runs));
   updateHud();
   if (!runs) postMessage("DOT", "#f5f7fb", 0.9);
   else if (runs === 6) postMessage("SIX!", "#ffe58a", 1.2);
@@ -346,6 +351,8 @@ function resolveWicket(text, hitX, hitY) {
   GAME.wickets += 1;
   GAME.balls += 1;
   GAME.lastBallText = `WICKET · ${text}`;
+  if ((GAME.balls - 1) % 6 === 0) GAME.currentOverBalls = [];
+  GAME.currentOverBalls.push("W");
   updateHud();
   postMessage("BOWLED", "#ff9d9d", 1.2);
   startWicketAnimation(hitX, hitY);
@@ -892,7 +899,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v16", W / 2, H - 22);
+  ctx.fillText("v17", W / 2, H - 22);
   ctx.restore();
 }
 
