@@ -891,7 +891,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v14", W / 2, H - 22);
+  ctx.fillText("v15", W / 2, H - 22);
   ctx.restore();
 }
 
@@ -938,7 +938,7 @@ window.addEventListener("keydown", (e) => {
   if (e.key === "ArrowLeft") { e.preventDefault(); registerShot("leg"); }
   else if (e.key === "ArrowRight") { e.preventDefault(); registerShot("off"); }
   else if (e.key === "p" || e.key === "P") { togglePractice(); }
-  else if (e.key === "Escape") { togglePause(); }
+  else if (e.key === " ") { e.preventDefault(); togglePause(); }
 });
 
 canvas.addEventListener("pointerdown", (e) => {
