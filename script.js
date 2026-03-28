@@ -806,7 +806,7 @@ function drawTimingMeterRight() {
   // Background panel
   ctx.save();
   ctx.fillStyle = "rgba(6,16,25,0.52)";
-  roundRect(ctx, boxX, boxY, trackW + 32, trackH + 56, 20);
+  roundRect(ctx, boxX, boxY, trackW + 32, trackH + 68, 20);
   ctx.fill();
 
   // Header label
@@ -818,11 +818,11 @@ function drawTimingMeterRight() {
 
   // Band definitions
   const bands = [
-    { label: "EARLY",        color: "rgba(255,100,100,0.55)",  frac: 0.35 },
-    { label: "SLIGHT EARLY", color: "rgba(255,180,80,0.45)",   frac: 0.20 },
+    { label: "EARLY",        color: "rgba(255,100,100,0.55)",  frac: 0.30 },
+    { label: "SLIGHT EARLY", color: "rgba(255,180,80,0.45)",   frac: 0.15 },
     { label: "PERFECT",      color: "rgba(255,229,138,0.75)",  frac: 0.10 },
-    { label: "SLIGHT LATE",  color: "rgba(255,180,80,0.45)",   frac: 0.20 },
-    { label: "LATE",         color: "rgba(255,100,100,0.55)",  frac: 0.35 },
+    { label: "SLIGHT LATE",  color: "rgba(255,180,80,0.45)",   frac: 0.15 },
+    { label: "LATE",         color: "rgba(255,100,100,0.55)",  frac: 0.30 },
   ];
 
   // Draw bands
@@ -891,7 +891,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v13", W / 2, H - 22);
+  ctx.fillText("v14", W / 2, H - 22);
   ctx.restore();
 }
 
