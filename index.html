@@ -33,6 +33,10 @@
           <span class="label">Current Over</span>
           <span id="lastBallValue" class="value smallValue card-body">–  –  –  –  –  –</span>
         </div>
+        <div class="score-card">
+          <span class="label">Batsmen</span>
+          <div id="batsmenValue" class="card-body batsmen-display">–</div>
+        </div>
       </div>
 
       <div class="header-actions">
@@ -57,7 +61,10 @@
             <div><strong>P key</strong><span>toggle practice mode</span></div>
             <div><strong>Space</strong><span>pause / resume</span></div>
           </div>
-          <button id="startBtn">Start innings</button>
+          <div class="panel-actions">
+            <button id="viewTeamBtn" class="btn-secondary">View team</button>
+            <button id="startBtn">Start innings</button>
+          </div>
         </div>
       </div>
 
@@ -68,6 +75,7 @@
     </main>
   </div>
 
+  <script src="team.js"></script>
   <script src="script.js"></script>
 </body>
 </html>

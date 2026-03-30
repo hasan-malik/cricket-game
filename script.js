@@ -1,15 +1,15 @@
 const canvas = document.getElementById("gameCanvas");
 const ctx = canvas.getContext("2d");
 
-const scoreValue = document.getElementById("scoreValue");
-const oversValue = document.getElementById("oversValue");
-const ballsValue = document.getElementById("ballsValue");
+const scoreValue    = document.getElementById("scoreValue");
+const oversValue    = document.getElementById("oversValue");
+const ballsValue    = document.getElementById("ballsValue");
 const lastBallValue = document.getElementById("lastBallValue");
-const overlay = document.getElementById("overlay");
-const startBtn = document.getElementById("startBtn");
-const legBtn = document.getElementById("legBtn");
-const offBtn = document.getElementById("offBtn");
-const pauseBtn = document.getElementById("pauseBtn");
+const batsmenValue  = document.getElementById("batsmenValue");
+const overlay       = document.getElementById("overlay");
+const legBtn        = document.getElementById("legBtn");
+const offBtn        = document.getElementById("offBtn");
+const pauseBtn      = document.getElementById("pauseBtn");
 const practiceModeBtn = document.getElementById("practiceModeBtn");
 
 const W = canvas.width;
@@ -37,6 +37,10 @@ const GAME = {
   practiceMode: false,
   paused: false,
   finishResult: null,
+  strikerIdx: 0,
+  nonStrikerIdx: 1,
+  nextBatsmanIdx: 2,
+  batterRuns: [0, 0, 0, 0, 0],
 };
 
 const pitch = {
@@ -148,6 +152,21 @@ function updateHud() {
   ballsValue.textContent = GAME.target;
   const overSlots = Array.from({ length: 6 }, (_, i) => GAME.currentOverBalls[i] ?? "–");
   lastBallValue.textContent = overSlots.join("  ");
+  if (GAME.state === "menu") {
+    batsmenValue.innerHTML = "–";
+  } else {
+    const s  = GAME.strikerIdx;
+    const ns = GAME.nonStrikerIdx;
+    batsmenValue.innerHTML =
+      `<div class="batsman-row">` +
+        `<span class="bat-name">${escapeHtml(TEAM.players[s].name)}<span class="striker-mark">*</span></span>` +
+        `<span class="bat-runs">${GAME.batterRuns[s]}</span>` +
+      `</div>` +
+      `<div class="batsman-row">` +
+        `<span class="bat-name">${escapeHtml(TEAM.players[ns].name)}</span>` +
+        `<span class="bat-runs">${GAME.batterRuns[ns]}</span>` +
+      `</div>`;
+  }
 }
 
 function resetGame() {
@@ -173,6 +192,10 @@ function resetGame() {
   spawnCooldown = 1.0;
   GAME.paused = false;
   GAME.finishResult = null;
+  GAME.strikerIdx     = 0;
+  GAME.nonStrikerIdx  = 1;
+  GAME.nextBatsmanIdx = 2;
+  GAME.batterRuns     = [0, 0, 0, 0, 0];
   GAME.state = "playing";
   overlay.classList.remove("show");
   updateHud();
@@ -339,12 +362,21 @@ function judgeShot(side) {
   }
 }
 
+function rotateStrike() {
+  const tmp       = GAME.strikerIdx;
+  GAME.strikerIdx    = GAME.nonStrikerIdx;
+  GAME.nonStrikerIdx = tmp;
+}
+
 function resolveRuns(runs, text) {
+  GAME.batterRuns[GAME.strikerIdx] += runs;
   GAME.score += runs;
   GAME.balls += 1;
   GAME.lastBallText = runs ? `${runs} runs · ${text}` : text;
   if ((GAME.balls - 1) % 6 === 0) GAME.currentOverBalls = [];
   GAME.currentOverBalls.push(runs === 0 ? "·" : String(runs));
+  if (runs % 2 === 1)       rotateStrike();  // odd runs cross the batsmen
+  if (GAME.balls % 6 === 0) rotateStrike();  // end of over always rotates
   updateHud();
   if (!runs) postMessage("DOT", "#f5f7fb", 0.9);
   else if (runs === 6) postMessage("SIX!", "#ffe58a", 1.2);
@@ -359,6 +391,9 @@ function resolveWicket(text, hitX, hitY) {
   GAME.lastBallText = `WICKET · ${text}`;
   if ((GAME.balls - 1) % 6 === 0) GAME.currentOverBalls = [];
   GAME.currentOverBalls.push("W");
+  GAME.strikerIdx = GAME.nextBatsmanIdx;
+  GAME.nextBatsmanIdx += 1;
+  if (GAME.balls % 6 === 0) rotateStrike();  // end of over after wicket
   updateHud();
   postMessage("BOWLED", "#ff9d9d", 1.2);
   startWicketAnimation(hitX, hitY);
@@ -410,7 +445,6 @@ function showFinishOverlay() {
     <button id="restartBtn">Play again</button>
   `;
   overlay.classList.add("show");
-  document.getElementById("restartBtn").addEventListener("click", resetGame);
 }
 
 function launchHit(side, quality, runs, grounded) {
@@ -899,17 +933,16 @@ function drawTimingMeterRight() {
   }
 
   // Determine what to show
-  let markerNorm = null;
-  let markerLabel = null;
+  let markerNorm  = null;
   let markerColor = "#ffffff";
 
   if (GAME.shotTimingScore !== null) {
     markerNorm = GAME.shotTimingOffsetNorm;
-    if      (markerNorm < -0.65) { markerLabel = "EARLY";        markerColor = "#ff6464"; }
-    else if (markerNorm < -0.25) { markerLabel = "SLIGHT EARLY"; markerColor = "#ffb450"; }
-    else if (markerNorm <=  0.25) { markerLabel = "PERFECT";      markerColor = "#ffe58a"; }
-    else if (markerNorm <=  0.65) { markerLabel = "SLIGHT LATE";  markerColor = "#ffb450"; }
-    else                          { markerLabel = "LATE";         markerColor = "#ff6464"; }
+    if      (markerNorm < -0.65)  markerColor = "#ff6464";
+    else if (markerNorm < -0.25)  markerColor = "#ffb450";
+    else if (markerNorm <=  0.25) markerColor = "#ffe58a";
+    else if (markerNorm <=  0.65) markerColor = "#ffb450";
+    else                          markerColor = "#ff6464";
   } else if (ball && !ball.hit && GAME.practiceMode) {
     const timing = computeTiming(ball.elapsed, ball.type);
     markerNorm = timing.offsetNorm;
@@ -938,7 +971,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v20", W / 2, H - 22);
+  ctx.fillText("v21", W / 2, H - 22);
   ctx.restore();
 }
 
@@ -1030,7 +1063,13 @@ function bindPress(el, side) {
 
 bindPress(legBtn, "leg");
 bindPress(offBtn, "off");
-startBtn.addEventListener("click", resetGame);
+overlay.addEventListener("click", e => {
+  const id = e.target.id;
+  if (id === "startBtn")                              resetGame();
+  if (id === "viewTeamBtn" && GAME.state === "menu") showTeamPanel();
+  if (id === "teamBackBtn")                           showIntroPanel();
+  if (id === "restartBtn")                            resetGame();
+});
 
 updateHud();
 requestAnimationFrame(loop);

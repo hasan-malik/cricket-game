@@ -81,7 +81,7 @@ body {
   flex: 1.5;
   padding: 8px;
   display: grid;
-  grid-template-columns: 1.2fr 1fr 1.5fr;
+  grid-template-columns: 1.2fr 0.55fr 1.1fr 1.2fr;
   gap: 8px;
 }
 
@@ -245,6 +245,111 @@ button {
 .touch-btn.right.active {
   background: transparent;
   border-color: transparent;
+}
+
+/* Panel two-button row */
+.panel-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 4px;
+}
+.panel-actions > button { flex: 1; }
+
+/* Secondary (ghost) button — used in panel-actions and team back button */
+.btn-secondary {
+  padding: 14px 18px;
+  font-size: 1rem;
+  color: var(--text);
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.14);
+  transition: background 0.15s, border-color 0.15s;
+}
+.btn-secondary:hover {
+  background: rgba(255, 255, 255, 0.11);
+  border-color: rgba(255, 255, 255, 0.24);
+}
+
+/* Team back button — full width, sits below the list */
+#teamBackBtn {
+  display: block;
+  width: 100%;
+  margin-top: 6px;
+}
+
+/* Batting-order panel */
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0 18px;
+}
+.team-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  background: rgba(255, 255, 255, 0.04);
+  border-radius: 12px;
+  padding: 11px 14px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.team-row:hover { background: rgba(255, 255, 255, 0.08); }
+.batting-order {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 700;
+  width: 14px;
+  flex-shrink: 0;
+  text-align: right;
+}
+.player-name {
+  font-weight: 700;
+  font-size: 1rem;
+  flex: 1;
+}
+.name-input {
+  background: transparent;
+  border: none;
+  border-bottom: 2px solid var(--accent);
+  color: var(--text);
+  font-size: 1rem;
+  font-weight: 700;
+  font-family: inherit;
+  outline: none;
+  width: 100%;
+  padding: 0 0 2px;
+}
+
+/* Batsmen header card */
+.batsmen-display {
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: center;
+  gap: 4px;
+}
+.batsman-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 4px;
+}
+.bat-name {
+  font-size: 0.9rem;
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  min-width: 0;
+}
+.striker-mark {
+  color: var(--accent);
+  font-weight: 800;
+  margin-left: 1px;
+}
+.bat-runs {
+  font-size: 0.9rem;
+  font-weight: 800;
+  flex-shrink: 0;
 }
 
 @media (max-width: 980px) {
