@@ -36,6 +36,7 @@ const GAME = {
   shotTimingOffsetNorm: 0,   // -1 early, 0 perfect, +1 late
   practiceMode: false,
   paused: false,
+  finishResult: null,
 };
 
 const pitch = {
@@ -171,6 +172,7 @@ function resetGame() {
   ball = null;
   spawnCooldown = 1.0;
   GAME.paused = false;
+  GAME.finishResult = null;
   GAME.state = "playing";
   overlay.classList.remove("show");
   updateHud();
@@ -366,20 +368,49 @@ function resolveWicket(text, hitX, hitY) {
 }
 
 function maybeFinish() {
-  if (GAME.balls >= GAME.maxBalls || GAME.wickets >= GAME.maxWickets) {
-    GAME.state = "over";
-    overlay.classList.add("show");
-    overlay.querySelector(".panel").innerHTML = `
-      <h2>${GAME.wickets >= GAME.maxWickets ? "All out" : "Innings complete"}</h2>
-      <p><strong>Final score:</strong> ${GAME.score}</p>
-      <p><strong>Balls:</strong> ${GAME.balls} / ${GAME.maxBalls} &nbsp; · &nbsp; <strong>Wickets:</strong> ${GAME.wickets} / ${GAME.maxWickets}</p>
-      <p>
-        This build uses a real timer per delivery, a 5-band timing meter, and a softened wrong-side rule (good timing still earns 1 run).
-      </p>
-      <button id="restartBtn">Play again</button>
-    `;
-    document.getElementById("restartBtn").addEventListener("click", resetGame);
+  if (GAME.score >= GAME.target) {
+    GAME.state = "finishing";
+    GAME.finishResult = {
+      type: "win",
+      ballsLeft: GAME.maxBalls - GAME.balls,
+      wicketsLeft: GAME.maxWickets - GAME.wickets,
+    };
+    return;
   }
+  if (GAME.balls >= GAME.maxBalls || GAME.wickets >= GAME.maxWickets) {
+    GAME.state = "finishing";
+    GAME.finishResult = GAME.score === GAME.target - 1
+      ? { type: "tie" }
+      : { type: "loss", runsShort: GAME.target - 1 - GAME.score, allOut: GAME.wickets >= GAME.maxWickets };
+  }
+}
+
+function showFinishOverlay() {
+  GAME.state = "over";
+  const r = GAME.finishResult;
+  let title, body;
+  if (r.type === "win") {
+    const b = r.ballsLeft, w = r.wicketsLeft;
+    title = "Victory!";
+    body = `<p><strong>Final score:</strong> ${GAME.score} / ${GAME.wickets}</p>
+            <p>Target of ${GAME.target} chased down with ${w} wicket${w !== 1 ? "s" : ""} and ${b} ball${b !== 1 ? "s" : ""} to spare.</p>`;
+  } else if (r.type === "tie") {
+    title = "Tied!";
+    body = `<p><strong>Final score:</strong> ${GAME.score} / ${GAME.wickets}</p>
+            <p>One run short of the target of ${GAME.target}.</p>`;
+  } else {
+    title = r.allOut ? "All out" : "Innings over";
+    body = `<p><strong>Final score:</strong> ${GAME.score} / ${GAME.wickets}</p>
+            <p>Fell short by ${r.runsShort} run${r.runsShort !== 1 ? "s" : ""}.</p>`;
+  }
+  overlay.querySelector(".panel").innerHTML = `
+    <h2>${title}</h2>
+    ${body}
+    <p><strong>Balls faced:</strong> ${GAME.balls} / ${GAME.maxBalls} &nbsp;·&nbsp; <strong>Wickets:</strong> ${GAME.wickets} / ${GAME.maxWickets}</p>
+    <button id="restartBtn">Play again</button>
+  `;
+  overlay.classList.add("show");
+  document.getElementById("restartBtn").addEventListener("click", resetGame);
 }
 
 function launchHit(side, quality, runs, grounded) {
@@ -544,10 +575,14 @@ function updateEffects(dt) {
 }
 
 function update(dt) {
-  if (GAME.state === "playing" && !GAME.paused) {
+  if ((GAME.state === "playing" || GAME.state === "finishing") && !GAME.paused) {
     if (!ball) {
-      spawnCooldown -= dt;
-      if (spawnCooldown <= 0) spawnBall();
+      if (GAME.state === "finishing") {
+        showFinishOverlay();
+      } else {
+        spawnCooldown -= dt;
+        if (spawnCooldown <= 0) spawnBall();
+      }
     } else {
       updateBall(dt);
     }
@@ -903,7 +938,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v19", W / 2, H - 22);
+  ctx.fillText("v20", W / 2, H - 22);
   ctx.restore();
 }
 
