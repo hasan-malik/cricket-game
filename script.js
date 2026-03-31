@@ -163,7 +163,7 @@ function project(progress, lateral = 0) {
 function updateHud() {
   scoreValue.textContent = `${GAME.score}/${GAME.wickets}`;
   oversValue.textContent = `${toOvers(GAME.balls)} (${toOvers(GAME.maxBalls)})`;
-  ballsValue.textContent = `${GAME.otherTeamScore}/${GAME.otherTeamWickets}`;
+  ballsValue.textContent = GAME.state === "menu" ? "–/–" : `${GAME.otherTeamScore}/${GAME.otherTeamWickets}`;
   const overSlots = Array.from({ length: 6 }, (_, i) => GAME.currentOverBalls[i] ?? "–");
   lastBallValue.textContent = overSlots.join("  ");
   if (GAME.state === "menu") {
@@ -974,7 +974,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v24", W / 2, H - 22);
+  ctx.fillText("v25", W / 2, H - 22);
   ctx.restore();
 }
 
