@@ -14,6 +14,8 @@ const TEAM = {
 const _panel = document.querySelector("#overlay .panel");
 const _introPanelHTML = _panel.innerHTML;
 
+function toOvers(b) { return `${Math.floor(b / 6)}.${b % 6}`; }
+
 function escapeHtml(str) {
   return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }

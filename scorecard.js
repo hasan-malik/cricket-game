@@ -1,5 +1,8 @@
 // scorecard.js — scorecard panel (pause + game over)
 
+const sr = (runs, balls) =>
+  balls === 0 ? "–" : ((runs / balls) * 100).toFixed(1);
+
 function resultBanner(r) {
   if (!r) return "";
   let label, sub, color;
@@ -24,11 +27,6 @@ function resultBanner(r) {
 }
 
 function showScorecardPanel(result = null) {
-  const panel   = document.querySelector("#overlay .panel");
-  const toOvers = b => `${Math.floor(b / 6)}.${b % 6}`;
-  const sr      = (runs, balls) =>
-    balls === 0 ? "–" : ((runs / balls) * 100).toFixed(1);
-
   const rows = TEAM.players.map((p, i) => {
     const isOut     = GAME.battedOut[i];
     const isStriker = i === GAME.strikerIdx;
@@ -60,7 +58,7 @@ function showScorecardPanel(result = null) {
     ? `<button id="restartBtn">Play again</button>`
     : `<button id="resumeBtn">▶ Resume</button>`;
 
-  panel.innerHTML =
+  _panel.innerHTML =
     resultBanner(result) +
     `<h2>Scorecard</h2>` +
     `<table class="sc-table">` +

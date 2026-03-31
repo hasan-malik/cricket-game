@@ -150,7 +150,6 @@ function project(progress, lateral = 0) {
 }
 
 function updateHud() {
-  const toOvers = b => `${Math.floor(b / 6)}.${b % 6}`;
   scoreValue.textContent = `${GAME.score}/${GAME.wickets}`;
   oversValue.textContent = `${toOvers(GAME.balls)} (${toOvers(GAME.maxBalls)})`;
   ballsValue.textContent = GAME.target;
@@ -734,7 +733,7 @@ function drawBowler() {
   const arm = ball ? Math.sin(Math.min(ball.t * 3.2, 1) * Math.PI * 1.06) : 0;
   ctx.strokeStyle = "#102235"; ctx.lineWidth = 8; ctx.lineCap = "round";
   ctx.fillStyle = "#f2c59d"; ctx.beginPath(); ctx.arc(0, -58, 16, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#274c8b"; ctx.fillRect(-15, -40, 30, 50);
+  ctx.fillStyle = "#1e6b35"; ctx.fillRect(-15, -40, 30, 50);
   ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(0, 10); ctx.stroke();
   ctx.beginPath();
   ctx.moveTo(0, -28); ctx.lineTo(-28, -10 + Math.sin(performance.now() / 140) * 7);
@@ -963,7 +962,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v23", W / 2, H - 22);
+  ctx.fillText("v24", W / 2, H - 22);
   ctx.restore();
 }
 
