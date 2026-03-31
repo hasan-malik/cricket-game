@@ -435,28 +435,7 @@ function maybeFinish() {
 
 function showFinishOverlay() {
   GAME.state = "over";
-  const r = GAME.finishResult;
-  let title, body;
-  if (r.type === "win") {
-    const b = r.ballsLeft, w = r.wicketsLeft;
-    title = "Victory!";
-    body = `<p><strong>Final score:</strong> ${GAME.score} / ${GAME.wickets}</p>
-            <p>Target of ${GAME.target} chased down with ${w} wicket${w !== 1 ? "s" : ""} and ${b} ball${b !== 1 ? "s" : ""} to spare.</p>`;
-  } else if (r.type === "tie") {
-    title = "Tied!";
-    body = `<p><strong>Final score:</strong> ${GAME.score} / ${GAME.wickets}</p>
-            <p>One run short of the target of ${GAME.target}.</p>`;
-  } else {
-    title = r.allOut ? "All out" : "Innings over";
-    body = `<p><strong>Final score:</strong> ${GAME.score} / ${GAME.wickets}</p>
-            <p>Fell short by ${r.runsShort} run${r.runsShort !== 1 ? "s" : ""}.</p>`;
-  }
-  overlay.querySelector(".panel").innerHTML = `
-    <h2>${title}</h2>
-    ${body}
-    <p><strong>Balls faced:</strong> ${GAME.balls} / ${GAME.maxBalls} &nbsp;·&nbsp; <strong>Wickets:</strong> ${GAME.wickets} / ${GAME.maxWickets}</p>
-    <button id="restartBtn">Play again</button>
-  `;
+  showScorecardPanel(GAME.finishResult);
   overlay.classList.add("show");
 }
 
@@ -984,7 +963,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v22", W / 2, H - 22);
+  ctx.fillText("v23", W / 2, H - 22);
   ctx.restore();
 }
 
