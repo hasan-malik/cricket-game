@@ -40,7 +40,11 @@ const GAME = {
   strikerIdx: 0,
   nonStrikerIdx: 1,
   nextBatsmanIdx: 2,
-  batterRuns: [0, 0, 0, 0, 0],
+  batterRuns:  [0, 0, 0, 0, 0],
+  batterBalls: [0, 0, 0, 0, 0],
+  batterFours: [0, 0, 0, 0, 0],
+  batterSixes: [0, 0, 0, 0, 0],
+  battedOut:   [false, false, false, false, false],
 };
 
 const pitch = {
@@ -196,6 +200,10 @@ function resetGame() {
   GAME.nonStrikerIdx  = 1;
   GAME.nextBatsmanIdx = 2;
   GAME.batterRuns     = [0, 0, 0, 0, 0];
+  GAME.batterBalls    = [0, 0, 0, 0, 0];
+  GAME.batterFours    = [0, 0, 0, 0, 0];
+  GAME.batterSixes    = [0, 0, 0, 0, 0];
+  GAME.battedOut      = [false, false, false, false, false];
   GAME.state = "playing";
   overlay.classList.remove("show");
   updateHud();
@@ -369,7 +377,10 @@ function rotateStrike() {
 }
 
 function resolveRuns(runs, text) {
-  GAME.batterRuns[GAME.strikerIdx] += runs;
+  GAME.batterRuns[GAME.strikerIdx]  += runs;
+  GAME.batterBalls[GAME.strikerIdx] += 1;
+  if (runs === 4) GAME.batterFours[GAME.strikerIdx] += 1;
+  if (runs === 6) GAME.batterSixes[GAME.strikerIdx] += 1;
   GAME.score += runs;
   GAME.balls += 1;
   GAME.lastBallText = runs ? `${runs} runs · ${text}` : text;
@@ -391,7 +402,9 @@ function resolveWicket(text, hitX, hitY) {
   GAME.lastBallText = `WICKET · ${text}`;
   if ((GAME.balls - 1) % 6 === 0) GAME.currentOverBalls = [];
   GAME.currentOverBalls.push("W");
-  GAME.strikerIdx = GAME.nextBatsmanIdx;
+  GAME.batterBalls[GAME.strikerIdx] += 1;
+  GAME.battedOut[GAME.strikerIdx]    = true;
+  GAME.strikerIdx     = GAME.nextBatsmanIdx;
   GAME.nextBatsmanIdx += 1;
   if (GAME.balls % 6 === 0) rotateStrike();  // end of over after wicket
   updateHud();
@@ -971,7 +984,7 @@ function drawVersionTag() {
   ctx.textAlign = "center";
   ctx.font = "700 13px Inter, sans-serif";
   ctx.fillStyle = "rgba(247,250,252,0.45)";
-  ctx.fillText("v21", W / 2, H - 22);
+  ctx.fillText("v22", W / 2, H - 22);
   ctx.restore();
 }
 
@@ -1037,8 +1050,12 @@ function togglePause() {
   if (GAME.state !== "playing") return;
   GAME.paused = !GAME.paused;
   pauseBtn.textContent = GAME.paused ? "▶ Resume" : "⏸ Pause";
-  if (GAME.paused) overlay.classList.add("show");
-  else overlay.classList.remove("show");
+  if (GAME.paused) {
+    showScorecardPanel();
+    overlay.classList.add("show");
+  } else {
+    overlay.classList.remove("show");
+  }
 }
 
 function togglePractice() {
@@ -1069,6 +1086,7 @@ overlay.addEventListener("click", e => {
   if (id === "viewTeamBtn" && GAME.state === "menu") showTeamPanel();
   if (id === "teamBackBtn")                           showIntroPanel();
   if (id === "restartBtn")                            resetGame();
+  if (id === "resumeBtn")                             togglePause();
 });
 
 updateHud();
