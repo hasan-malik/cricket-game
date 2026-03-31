@@ -13,7 +13,7 @@ function resultBanner(r) {
     color = "var(--accent)";
   } else if (r.type === "tie") {
     label = "Tied";
-    sub   = `One run short of ${GAME.target}`;
+    sub   = `Scores level at ${GAME.otherTeamScore}`;
     color = "#ffe58a";
   } else {
     label = r.allOut ? "All out" : "Innings over";
@@ -74,7 +74,7 @@ function showScorecardPanel(result = null) {
     `</table>` +
     `<div class="sc-totals">` +
       `<span>${GAME.score} / ${GAME.wickets}</span>` +
-      `<span class="sc-totals-meta">${toOvers(GAME.balls)} ov &nbsp;·&nbsp; target ${GAME.target}</span>` +
+      `<span class="sc-totals-meta">${toOvers(GAME.balls)} ov &nbsp;·&nbsp; chasing ${GAME.otherTeamScore}/${GAME.otherTeamWickets}</span>` +
     `</div>` +
     actionBtn;
 }

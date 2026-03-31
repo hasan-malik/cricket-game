@@ -11,9 +11,19 @@ const legBtn        = document.getElementById("legBtn");
 const offBtn        = document.getElementById("offBtn");
 const pauseBtn      = document.getElementById("pauseBtn");
 const practiceModeBtn = document.getElementById("practiceModeBtn");
+const scoreLabelEl    = document.getElementById("scoreLabelEl");
+const targetLabelEl   = document.getElementById("targetLabelEl");
 
 const W = canvas.width;
 const H = canvas.height;
+
+const battingTeamName  = "IND";
+const bowlingTeamName  = "PAK";
+const battingTeamColor = "#214e8a";
+const bowlingTeamColor = "#1e6b35";
+
+scoreLabelEl.textContent  = battingTeamName;
+targetLabelEl.textContent = bowlingTeamName;
 
 const GAME = {
   maxBalls: 30,
@@ -24,7 +34,8 @@ const GAME = {
   wickets: 0,
   lastBallText: "Waiting…",
   currentOverBalls: [],
-  target: "",
+  otherTeamScore: 0,
+  otherTeamWickets: 0,
   message: "",
   messageColor: "#ffffff",
   messageTimer: 0,
@@ -152,7 +163,7 @@ function project(progress, lateral = 0) {
 function updateHud() {
   scoreValue.textContent = `${GAME.score}/${GAME.wickets}`;
   oversValue.textContent = `${toOvers(GAME.balls)} (${toOvers(GAME.maxBalls)})`;
-  ballsValue.textContent = GAME.target;
+  ballsValue.textContent = `${GAME.otherTeamScore}/${GAME.otherTeamWickets}`;
   const overSlots = Array.from({ length: 6 }, (_, i) => GAME.currentOverBalls[i] ?? "–");
   lastBallValue.textContent = overSlots.join("  ");
   if (GAME.state === "menu") {
@@ -173,7 +184,8 @@ function updateHud() {
 }
 
 function resetGame() {
-  GAME.target = Math.floor(Math.random() * 41) + 80;
+  GAME.otherTeamScore   = Math.floor(Math.random() * 41) + 79;
+  GAME.otherTeamWickets = Math.floor(Math.random() * 3);
   GAME.score = 0;
   GAME.balls = 0;
   GAME.wickets = 0;
@@ -415,7 +427,7 @@ function resolveWicket(text, hitX, hitY) {
 }
 
 function maybeFinish() {
-  if (GAME.score >= GAME.target) {
+  if (GAME.score > GAME.otherTeamScore) {
     GAME.state = "finishing";
     GAME.finishResult = {
       type: "win",
@@ -426,9 +438,9 @@ function maybeFinish() {
   }
   if (GAME.balls >= GAME.maxBalls || GAME.wickets >= GAME.maxWickets) {
     GAME.state = "finishing";
-    GAME.finishResult = GAME.score === GAME.target - 1
+    GAME.finishResult = GAME.score === GAME.otherTeamScore
       ? { type: "tie" }
-      : { type: "loss", runsShort: GAME.target - 1 - GAME.score, allOut: GAME.wickets >= GAME.maxWickets };
+      : { type: "loss", runsShort: GAME.otherTeamScore - GAME.score, allOut: GAME.wickets >= GAME.maxWickets };
   }
 }
 
@@ -733,7 +745,7 @@ function drawBowler() {
   const arm = ball ? Math.sin(Math.min(ball.t * 3.2, 1) * Math.PI * 1.06) : 0;
   ctx.strokeStyle = "#102235"; ctx.lineWidth = 8; ctx.lineCap = "round";
   ctx.fillStyle = "#f2c59d"; ctx.beginPath(); ctx.arc(0, -58, 16, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#1e6b35"; ctx.fillRect(-15, -40, 30, 50);
+  ctx.fillStyle = bowlingTeamColor; ctx.fillRect(-15, -40, 30, 50);
   ctx.beginPath(); ctx.moveTo(0, -40); ctx.lineTo(0, 10); ctx.stroke();
   ctx.beginPath();
   ctx.moveTo(0, -28); ctx.lineTo(-28, -10 + Math.sin(performance.now() / 140) * 7);
@@ -758,7 +770,7 @@ function drawBatsman() {
   ctx.save(); ctx.translate(x, y);
   ctx.strokeStyle = "#13263b"; ctx.lineWidth = 9; ctx.lineCap = "round";
   ctx.fillStyle = "#efc39a"; ctx.beginPath(); ctx.arc(0, -86, 16, 0, Math.PI * 2); ctx.fill();
-  ctx.fillStyle = "#214e8a"; ctx.fillRect(-20, -70, 40, 48);
+  ctx.fillStyle = battingTeamColor; ctx.fillRect(-20, -70, 40, 48);
   ctx.beginPath(); ctx.moveTo(0, -56); ctx.lineTo(bodyLean * 0.2, -12); ctx.stroke();
   ctx.beginPath();
   ctx.moveTo(0, -50); ctx.lineTo(-22 + bodyLean * 0.15, -18);
